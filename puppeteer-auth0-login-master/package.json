@@ -1,0 +1,9 @@
+{
+  "name": "puppeteer-auth0-login",
+  "version": "2.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^1.11.0"
+  }
+}
