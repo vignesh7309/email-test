@@ -1,75 +1,78 @@
+const env = require("./env");
+const puppeteer = require("puppeteer");
+const sgMail = require('@sendgrid/mail');
+const fs = require("fs");
+const html = `<div style="font-size: 15px; padding-top: 8px; text-align: center; width: 100%;"></div>`;
+const html1 = "<div style='width:100%;text-align: center; color: #002060;border-bottom: 1pt solid #eeeeee;'><font size='3px'><h1>Here is today's Cage Fleet report from Octopus</h1></font> <img style=\"text-align: left;margin-right:10px;margin-left:10px;\" width=\"110px\" src=\"https://octopus.vt-iot.com/vt_logo_transparent.png\"/><p> </p></div>";
 
-(async () => {
+
+// async Function used to generate PDF from a web page and Send the PDF via Sendgrid Email
+async function GenerateReport () {
   "use strict";
-  const puppeteer = require("puppeteer");
   try{
     const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    // hitting the web page using Auth0 domain , client id and redirect url
+    await page.goto(
+      `https://${env.domain}/authorize?client_id=${env.clientId}&response_type=token&redirect_uri=${env.redirectUri}`,
+      { waitUntil: "networkidle2" }
+      );
+    console.log('Waiting for page to load.');
+    await page.waitForSelector('input[name="email"]', {
+      visible: true,
+      timeout: 5000
+    });
+    
+    console.log('Entering email address...');
+    await page.type('input[name="email"]', env.email, {delay: 50});
 
-  const page = await browser.newPage();
-  await page.goto(
-    `https://devlogin.octopus.vt-iot.com/authorize?client_id=twxPB7C9sq9mBcfsfpzYLwN3L2k0ObGr&response_type=token&redirect_uri=https://dev.octopus.vt-iot.com/`,
-    { waitUntil: "networkidle2" }
-  );
+    console.log('Entering password...');
+    await page.type('input[name="password"]', env.password, {delay: 50});
 
-  console.log('Waiting for page to load.');
-  await page.waitForSelector('input[name="email"]', {
-    visible: true,
-    timeout: 5000
-  });
+    console.log('Submit form.');
+    await page.click('button[type="submit"]');
+    await page.waitForNavigation({ waitUntil: "networkidle2" });
 
-  console.log('Entering email address...');
-  await page.type('input[name="email"]', 'vignesh.ramesh@vt-iot.com', {delay: 50});
-
-  console.log('Entering password...');
-  await page.type('input[name="password"]', 'Saibaba7309@', {delay: 50});
-
-  console.log('Submit form.');
-  await page.click('button[type="submit"]');
-  await page.waitForNavigation({ waitUntil: "networkidle2" });
-
-  console.log('Waiting to be redirected to the client.');
-  const clientUrl = await page.evaluate(() => window.location.href);
-  /*if (clientUrl.indexOf(`${env.redirectUri}/#access_token=`) !== 0) {
-    throw new Error("Login failed. Current url:" + clientUrl);
-  } else {
-    console.log('Login success:', clientUrl);
-  }*/
-  await page.pdf({path: 'sendgrid/html-page.pdf', format: 'A4'});
-  await browser.close();
-  sendmail();
-}
-catch(err) {
-  console.log("Failed to convert URL to PDF ("+err.name+" - "+err.message+")");
-  console.log(err);
+    console.log('Waiting to be redirected to the client.');
+    await page.evaluate(() => window.location.href);
+    // path of the generated pdf
+    await page.emulateMediaType('screen');            // use screen media
+    await page.pdf({path: 'sendgrid/Daily-Asset-Status-Report.pdf', displayHeaderFooter: true ,printBackground: true, footerTemplate: html,
+    margin : {
+            top: '20px',
+            right: '8px',
+            bottom: '40px',
+            left: '8px'
+        }});
+    await browser.close();
+  
+    // using SendGrid to send the mail 
+    sgMail.setApiKey('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');
+    const pathToAttachment = `sendgrid/Daily-Asset-Status-Report.pdf`;
+    const attachment = fs.readFileSync(pathToAttachment).toString("base64");
+    const msg = {
+      to: ['vignesh.ramesh@vt-iot.com'],
+      from: 'VT Reporting <reports@vt-iot.com>',
+      subject: 'Daily Asset Status Report (Do not reply)',
+      text: '  ',
+      html: html1,
+      attachments: [
+        {
+          content: attachment,
+          filename: "Daily-Asset-Status-Report.pdf",
+          type: "application/pdf",
+          disposition: "attachment"
+        }
+      ]
+    };
+    sgMail.sendMultiple(msg)
+    console.log("mail sent successfully");
   }
-})();
-
-
-async function sendmail(){
-  const sgMail = require('@sendgrid/mail');
-  sgMail.setApiKey('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');
-  
-  const fs = require("fs");
-  
-  pathToAttachment = `sendgrid/html-page.pdf`;
-  attachment = fs.readFileSync(pathToAttachment).toString("base64");
-  
-  const msg = {
-    to: 'vignesh.ramesh@vt-iot.com',
-    from: 'noreply@vt-iot.com',
-    subject: 'Sending with SendGrid is Fun',
-    text: 'and easy to do anywhere, even with Node.js',
-    attachments: [
-      {
-        content: attachment,
-        filename: "html-page.pdf",
-        type: "application/pdf",
-        disposition: "attachment"
-      }
-    ]
-  };
-  
-  sgMail.send(msg).catch(err => {
+  // send error here
+  catch(err) {
+    console.log("Failed to convert URL to PDF ("+err.name+" - "+err.message+")");
     console.log(err);
-  });
   }
+}
+
+GenerateReport();
