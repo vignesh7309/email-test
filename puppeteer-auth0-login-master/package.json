@@ -10,5 +10,8 @@
     "azure-keyvault": "^3.0.5",
     "node-file-encrypt": "0.0.5",
     "puppeteer": "^1.11.0"
+  },
+  "scripts": {
+    "start": "node index.js"
   }
 }
