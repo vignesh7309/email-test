@@ -1,7 +1,7 @@
-const env = require("./env");
 const puppeteer = require("puppeteer");
 const sgMail = require('@sendgrid/mail');
 const fs = require("fs");
+require('dotenv').config({path: 'local.env'});
 const html = `<div style="font-size: 15px; padding-top: 8px; text-align: center; width: 100%;"></div>`;
 const html1 = "<div style='width:100%;text-align: center; color: #002060;border-bottom: 1pt solid #eeeeee;'><font size='3px'><h1>Here is today's Cage Fleet report from Octopus</h1></font> <img style=\"text-align: left;margin-right:10px;margin-left:10px;\" width=\"110px\" src=\"https://octopus.vt-iot.com/vt_logo_transparent.png\"/><p> </p></div>";
 
@@ -14,7 +14,7 @@ async function GenerateReport () {
     const page = await browser.newPage();
     // hitting the web page using Auth0 domain , client id and redirect url
     await page.goto(
-      `https://${env.domain}/authorize?client_id=${env.clientId}&response_type=token&redirect_uri=${env.redirectUri}`,
+      `https://${process.env.DOMAIN}/authorize?client_id=${process.env.CLIENT_ID}&response_type=token&redirect_uri=${process.env.REDIRECT_URI}`,
       { waitUntil: "networkidle2" }
       );
     console.log('Waiting for page to load.');
@@ -24,10 +24,10 @@ async function GenerateReport () {
     });
     
     console.log('Entering email address...');
-    await page.type('input[name="email"]', env.email, {delay: 50});
+    await page.type('input[name="email"]', process.env.EMAIL, {delay: 50});
 
     console.log('Entering password...');
-    await page.type('input[name="password"]', env.password, {delay: 50});
+    await page.type('input[name="password"]', process.env.PASSWORD, {delay: 50});
 
     console.log('Submit form.');
     await page.click('button[type="submit"]');
@@ -36,7 +36,7 @@ async function GenerateReport () {
     console.log('Waiting to be redirected to the client.');
     await page.evaluate(() => window.location.href);
     // path of the generated pdf
-    await page.emulateMediaType('screen');            // use screen media
+    await page.emulateMedia('screen');            // use screen media
     await page.pdf({path: 'sendgrid/Daily-Asset-Status-Report.pdf', displayHeaderFooter: true ,printBackground: true, footerTemplate: html,
     margin : {
             top: '20px',
