@@ -8,7 +8,9 @@
     "@azure/keyvault-keys": "^4.1.0",
     "@azure/keyvault-secrets": "^4.1.0",
     "azure-keyvault": "^3.0.5",
+    "node": "^15.4.0",
     "node-file-encrypt": "0.0.5",
+    "nodejs": "0.0.0",
     "puppeteer": "^1.11.0"
   },
   "scripts": {
