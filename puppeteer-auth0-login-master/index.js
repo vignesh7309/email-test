@@ -2,8 +2,7 @@ const puppeteer = require("puppeteer");
 const sgMail = require('@sendgrid/mail');
 const fs = require("fs");
 require('dotenv').config({path: 'local.env'});
-const html = `<div style="font-size: 15px; padding-top: 8px; text-align: center; width: 100%;"></div>`;
-const html1 = "<div style='width:100%;text-align: center; color: #002060;border-bottom: 1pt solid #eeeeee;'><font size='3px'><h1>Here is today's Cage Fleet report from Octopus</h1></font> <img style=\"text-align: left;margin-right:10px;margin-left:10px;\" width=\"110px\" src=\"https://octopus.vt-iot.com/vt_logo_transparent.png\"/><p> </p></div>";
+const html = "<div style='width:100%;text-align: center; color: #002060;border-bottom: 1pt solid #eeeeee;'><font size='3px'><h1>Please see attached today's Cage Fleet report from Octopus</h1></font> <img style=\"text-align: left;margin-right:10px;margin-left:10px;\" width=\"110px\" src=\"https://octopus.vt-iot.com/vt_logo_transparent.png\"/><p> </p></div>";
 
 
 // async Function used to generate PDF from a web page and Send the PDF via Sendgrid Email
@@ -35,14 +34,17 @@ async function GenerateReport () {
 
     console.log('Waiting to be redirected to the client.');
     await page.evaluate(() => window.location.href);
+    
+    // use screen media
+    await page.emulateMedia('screen'); 
+    
     // path of the generated pdf
-    await page.emulateMedia('screen');            // use screen media
-    await page.pdf({path: 'sendgrid/Daily-Asset-Status-Report.pdf', displayHeaderFooter: true ,printBackground: true, footerTemplate: html,
+    await page.pdf({path: 'sendgrid/Daily-Asset-Status-Report.pdf', printBackground: true,
     margin : {
             top: '20px',
             right: '8px',
             bottom: '40px',
-            left: '8px'
+            left: '9px'
         }});
     await browser.close();
   
@@ -51,11 +53,11 @@ async function GenerateReport () {
     const pathToAttachment = `sendgrid/Daily-Asset-Status-Report.pdf`;
     const attachment = fs.readFileSync(pathToAttachment).toString("base64");
     const msg = {
-      to: ['vignesh.ramesh@vt-iot.com'],
+      to: [process.env.RECIPIENT],
       from: 'VT Reporting <reports@vt-iot.com>',
       subject: 'Daily Asset Status Report (Do not reply)',
       text: '  ',
-      html: html1,
+      html: html,
       attachments: [
         {
           content: attachment,
