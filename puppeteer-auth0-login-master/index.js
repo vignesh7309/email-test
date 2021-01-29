@@ -41,8 +41,8 @@ async function GenerateReport () {
     // path of the generated pdf
     await page.pdf({path: 'sendgrid/Daily-Asset-Status-Report.pdf', printBackground: true,
     margin : {
-            top: '20px',
-            right: '8px',
+            top: '40px',
+            right: '9px',
             bottom: '40px',
             left: '9px'
         }});
